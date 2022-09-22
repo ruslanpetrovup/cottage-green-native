@@ -5,14 +5,54 @@ workflows:
     instance_type: mac_mini
     environment:
       vars:
-        XCODE_WORKSPACE: Runner.xcworkspace # <-- Put the name of your Xcode workspace here
-        XCODE_SCHEME: Runner # <-- Put the name of your Xcode scheme here
-      xcode: 13.0
-    scripts:
-      - name: Build ipa for distribution
-        script: |
-          - xcode-project build-ipa --project "$XCODE_WORKSPACE" --scheme "$XCODE_SCHEME"
-    artifacts:
-      - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+        XCODE_WORKSPACE: "Runner.xcworkspace" # <-- Put the name of your Xcode workspace here
+        XCODE_SCHEME: "Runner" # <-- Put the name of your Xcode scheme here
+        APP_STORE_APP_ID: 1555555551
+      xcode: latest
+      cocoapods: default
+    triggering:
+        events:
+          - push
+          - tag
+          - pull_request
+        branch_patterns:
+          - pattern: 'develop'
+            include: true
+            source: true
+      scripts:
+        - name: Initialize keychain to be used for codesigning using Codemagic CLI 'keychain' command
+          script: |
+            keychain initialize
+        - name: set up provisioning profiles
+          script: |
+            PROFILES_HOME="$HOME/Library/MobileDevice/Provisioning Profiles"
+            mkdir -p "$PROFILES_HOME"
+            PROFILE_PATH="$(mktemp "$PROFILES_HOME"/$(uuidgen).mobileprovision)"
+            echo ${CM_PROVISIONING_PROFILE} | base64 --decode > $PROFILE_PATH
+            echo "Saved provisioning profile $PROFILE_PATH"
+        - name: Add signing certificate to keychain
+          script: |
+            echo $CM_CERTIFICATE | base64 --decode > /tmp/certificate.p12
+            keychain add-certificates --certificate /tmp/certificate.p12 --certificate-password $CM_CERTIFICATE_PASSWORD
+        - name: Increment build number
+          script: |
+            # increment build number
+            #!/bin/sh
+            set -e
+            set -x
+            cd $FCI_BUILD_DIR
+            # agvtool new-version -all $(($BUILD_NUMBER +1))
+            agvtool new-version -all $(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_APP_ID") + 1))
+        - name: Set up code signing settings on Xcode project
+          script: |
+            xcode-project use-profiles
+        - name: Build .ipa
+          script: |
+            xcode-project build-ipa --workspace "$XCODE_WORKSPACE" --scheme "$XCODE_SCHEME"
+      artifacts:
+        - build/ios/ipa/*.ipa
+        - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+      publishing:
+        email:
+            recipients:
+              - ruslanpetrov163@gmail.com
