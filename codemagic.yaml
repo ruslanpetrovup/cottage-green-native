@@ -1,67 +1,22 @@
 workflows:
-  my-workflow: # workflow ID
+  simulator-native-ios:
     name: CottageGreen
-    instance_type: mac_pro # machine instance type
-    max_build_duration: 60 # build duration in minutes (min 1, max 120)
+    max_build_duration: 120
+    instance_type: mac_mini
     environment:
       vars:
         XCODE_WORKSPACE: "Runner.xcworkspace" # <-- Put the name of your Xcode workspace here
         XCODE_SCHEME: "Runner" # <-- Put the name of your Xcode scheme here
-      flutter: stable # Define the channel name or version (e.g. v1.13.4)
-      xcode: latest # Define latest, edge or version (e.g. 11.2)
-      cocoapods: 1.9.1 # Define default or version
-      node: 12.14.0 # Define default, latest, current, lts, carbon (or another stream), nightly or version
-      npm: 6.13.7 # Define default, latest, next, lts or version
-      java: 1.8 # Define default, or platform version (e.g. 11)
-      ruby: 2.7.2
-    cache:
-      cache_paths:
-        - ~/.gradle/caches
-    triggering:
-      events: # List the events that trigger builds
-        - push
-        - pull_request
-        - tag
-      branch_patterns: # Include or exclude watched branches
-        - pattern: "*"
-          include: true
-          source: true
-        - pattern: excluded-target
-          include: false
-          source: false
-        - pattern: included-source
-          include: true
-          source: true
-      tag_patterns: # Include or exlude watched tag labels
-        - pattern: "*"
-          include: true
-        - pattern: excluded-tag
-          include: false
-        - pattern: included-tag
-          include: true
-      cancel_previous_builds: false
+      xcode: 13.0
+      cocoapods: default
     scripts:
-      - name: build ios
+      - name: Install CocoaPods dependencies
         script: |
-          xcodebuild build -workspace "$XCODE_WORKSPACE" -scheme "$XCODE_SCHEME" CODE_SIGN_INDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
-      - name: set up provisioning profiles
+          pod install
+      - name: Build ipa for distribution
         script: |
-          PROFILES_HOME="$HOME/Library/MobileDevice/Provisioning Profiles"
-          mkdir -p "$PROFILES_HOME"
-          PROFILE_PATH="$(mktemp "$PROFILES_HOME"/$(uuidgen).mobileprovision)"
-          echo ${CM_PROVISIONING_PROFILE} | base64 --decode > $PROFILE_PATH
-          echo "Saved provisioning profile $PROFILE_PATH"
+          xcodebuild build -workspace "$XCODE_WORKSPACE" -scheme "$XCODE_SCHEME" -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 12 Pro,OS=15.4' -configuration Debug CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
     artifacts:
-      - build/ios/ipa/*.ipa
-      - build/**/outputs/**/*.apk # relative path for a project in root directory
-      - subfolder_name/build/**/outputs/**/*.apk # relative path for a project in subfolder
-      - build/**/outputs/**/*.aab
-      - build/**/outputs/**/mapping.txt
-      - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
-      - flutter_drive.log
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
-    publishing:
-      email:
-        recipients:
-          - ruslanpetrov163@gmail.com
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
