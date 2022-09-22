@@ -43,7 +43,7 @@ workflows:
     scripts:
       - name: build ios
         script: |
-          xcodebuild build -workspace "MyXcodeWorkspace.xcworkspace" -scheme "$XCODE_SCHEME" CODE_SIGN_INDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+          xcodebuild build -workspace "$XCODE_WORKSPACE" -scheme "$XCODE_SCHEME" CODE_SIGN_INDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
       - name: set up provisioning profiles
         script: |
           PROFILES_HOME="$HOME/Library/MobileDevice/Provisioning Profiles"
