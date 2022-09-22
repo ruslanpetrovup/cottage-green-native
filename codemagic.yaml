@@ -45,15 +45,6 @@ workflows:
           PROFILE_PATH="$(mktemp "$PROFILES_HOME"/$(uuidgen).mobileprovision)"
           echo ${CM_PROVISIONING_PROFILE} | base64 --decode > $PROFILE_PATH
           echo "Saved provisioning profile $PROFILE_PATH"
-      - name: Increment build number
-        script: |
-          # increment build number
-          #!/bin/sh
-          set -e
-          set -x
-          cd $FCI_BUILD_DIR
-          # agvtool new-version -all $(($BUILD_NUMBER +1))
-          agvtool new-version -all $(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_APP_ID") + 1))
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles
