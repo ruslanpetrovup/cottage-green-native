@@ -16,6 +16,7 @@ export default function App() {
     const onChange = () => {
       const windowWidth = Dimensions.get("window").width;
     };
+
     const desc = Dimensions.addEventListener("change", onChange);
     return () => {
       desc?.remove();
