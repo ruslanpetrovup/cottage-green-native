@@ -47,6 +47,7 @@ workflows:
           echo "Saved provisioning profile $PROFILE_PATH"
     artifacts:
       - build/ios/ipa/*.ipa
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
     publishing:
       email:
         recipients:
