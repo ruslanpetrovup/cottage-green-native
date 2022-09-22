@@ -12,6 +12,7 @@ import Registration from "./pages/registration";
 
 export default function App() {
   const Stack = createNativeStackNavigator();
+
   useEffect(() => {
     const onChange = () => {
       const windowWidth = Dimensions.get("window").width;
